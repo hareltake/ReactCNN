@@ -17,13 +17,19 @@ CONFIG_FILE = 'config.cfg'
 
 RECORD_FILE_PATTERN = 'survey_example_{}.csv'
 
+CORR_FILE_PATTERN = 'corr_layer_{}.csv'
+
 IMAGE_FILE_PATTERN = 'image_{}.png'
 
-CACHE_SIZE = 10
+EXAMPLE_CACHE_SIZE = 10
 
-SAVE_EVERY_STEP = 1
+EXAMPLE_SAVE_EVERY_STEP = 1
 
-SLEEP_SECONDS = 5
+CORR_CACHE_SIZE = 1000
+
+CORR_SAVE_EVERY_STEP = 10
+
+SLEEP_SECONDS = 1
 
 class SurveyExampleRecord(object):
 
@@ -40,7 +46,8 @@ class SurveyExampleRecord(object):
         with open(self.csv_path, 'w') as f:
             print(int(self.label), file=f)
             for array in self.layer_filter_mean_output_list:
-                print(np.array2string(array, precision=5, separator=',')[1:-1].replace(' ','').replace('\n',''), file=f)
+                # print(np.array2string(array, precision=5, separator=',')[1:-1].replace(' ','').replace('\n',''), file=f)
+                print(format_array(array), file=f)
         self.has_saved = True
 
     def __del__(self):
@@ -49,11 +56,31 @@ class SurveyExampleRecord(object):
         if os.path.exists(self.csv_path):
             os.remove(self.csv_path)
 
-def cache_push(cache_list, element):
-    assert len(cache_list) <= CACHE_SIZE
-    if len(cache_list) == CACHE_SIZE:
+def cache_push(cache_list, element, cache_size):
+    assert len(cache_list) <= cache_size
+    if len(cache_list) == cache_size:
         cache_list.pop(0)
     cache_list.append(element)
+
+def format_array(array):
+    result = ''
+    if array.ndim == 1:
+        for a in array:
+            result += '%.4f,' % a
+    elif array.ndim == 2:
+        for i in range(array.shape[0]):
+            line = ''
+            for j in range(array.shape[1]):
+                line += '%.4f,' % array[i,j]
+            result += line[:-1] + '\n'
+    else:
+        assert False, 'WTF'
+    return result[:-1]
+
+
+
+
+
 
 # def save_int_list(file, int_list):
 #     np.savetxt(file, np.asarray(int_list, dtype=np.int32), fmt='%d', delimiter=',')
@@ -102,15 +129,19 @@ def launch_backend(model, num_examples=10000):
                 start_time = time.time()
 
                 survey_examples_cache = []
+                corr_cache_list = []
+                for i in range(num_survey_layers):
+                    corr_cache_list.append([])
 
                 while step < num_iter and not coord.should_stop():
                     fet = sess.run(fetches)
                     new_example_record = SurveyExampleRecord(idx=step)
                     for i in range(num_survey_layers):
-                        new_example_record.layer_filter_mean_output_list.append(fet[i].ravel())
+                        new_example_record.layer_filter_mean_output_list.append(fet[i].ravel()) # only works for batch size 1
+                        cache_push(corr_cache_list[i], fet[i], CORR_CACHE_SIZE)
                     new_example_record.output_image = fet[-1][0,:,:,:]
                     new_example_record.label = fet[-2].ravel()[0]
-                    cache_push(survey_examples_cache, new_example_record)
+                    cache_push(survey_examples_cache, new_example_record, EXAMPLE_CACHE_SIZE)
 
                     step += 1
                     if step % 20 == 0:
@@ -122,10 +153,19 @@ def launch_backend(model, num_examples=10000):
                                               examples_per_sec, sec_per_batch))
                         start_time = time.time()
 
-                    if step % SAVE_EVERY_STEP == 0:
+                    if step % EXAMPLE_SAVE_EVERY_STEP == 0:
                         for record in survey_examples_cache:
                             if not record.has_saved:
                                 record.save()
+                    if step % CORR_SAVE_EVERY_STEP == 0:
+                        for layer_idx, corr_cache in enumerate(corr_cache_list):
+                            output_array = np.concatenate(corr_cache, axis=0)
+                            corr_array = np.corrcoef(output_array, rowvar=False)
+                            corr_array = np.exp(20*corr_array)              # mapping function
+                            with open(CORR_FILE_PATTERN.format(layer_idx), 'w') as f:
+                                print(format_array(corr_array), file=f)
+                        print('corr file saved')
+
                     time.sleep(SLEEP_SECONDS)
 
                 print('finished!')

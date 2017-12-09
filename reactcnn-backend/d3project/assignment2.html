@@ -1,0 +1,122 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <title>Assignment 2</title>
+    <script src='https://code.jquery.com/jquery-1.11.2.min.js'></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js'></script>
+    <script src='tsne.js'></script>
+
+    <script>
+        const perplexity = 5;
+        const lr = 10;
+
+        var T, opt;
+        var data;
+
+        function updateEmbedding() {
+            var Y = T.getSolution();
+            gs.attr('transform', function(d, i) { return 'translate(' +
+                ((Y[i][0]*20*ss + tx) + 400) + ',' +
+                ((Y[i][1]*20*ss + ty) + 400) + ')'; });
+        }
+
+        var svg;
+        function initEmbedding() {
+            $('#show').empty();
+            var div = d3.select('#show');
+            svg = div.append('svg')
+                .attr('width', 1140)
+                .attr('height', 1140);
+        }
+
+        var gs;
+        var cs;
+        function drawEmbedding() {
+            gs = svg.selectAll('.b')
+                .data(data)
+                .enter().append('g')
+                .attr('class', 'u');
+
+            cs = gs.append('circle')
+                .attr('cx', 0)
+                .attr('cy', 0)
+                .attr('r', 5)
+                .attr('stroke-width', 1)
+                .attr('stroke', 'black')
+                .attr('fill', 'rgb(0,255,0)');
+
+            var zoomListener = d3.behavior.zoom()
+                .scaleExtent([0.1, 10])
+                .center([0,0])
+                .on('zoom', zoomHandler);
+            zoomListener(svg);
+        }
+
+        var tx=0, ty=0;
+        var ss=1;
+        function zoomHandler() {
+            tx = d3.event.translate[0];
+            ty = d3.event.translate[1];
+            ss = d3.event.scale;
+        }
+
+        function step() {
+            var cost = T.step();
+            $('#cost').html('iteration ' + T.iter + ', cost: ' + cost);
+            updateEmbedding();
+        }
+
+        function preProData(text) {
+            var d = ',';
+            var lines = text.split('\n');
+            var raw_data = [];
+            var dlen = -1;
+            for(var i=0;i<lines.length;i++) {
+                var row = lines[i];
+                if (! /\S/.test(row)) {
+                    continue;
+                }
+                var cells = row.split(d);
+                var data_point = [];
+                for(var j=0;j<cells.length;j++) {
+                    if(cells[j].length !== 0) {
+                        data_point.push(parseFloat(cells[j]));
+                    }
+                }
+                var dl = data_point.length;
+                if(i === 0) { dlen = dl; }
+                if(dlen !== dl) {
+                    dlen = dl;
+                }
+                raw_data.push(data_point);
+            }
+            data = raw_data;
+        }
+
+        iid = -1;
+        $(window).load(function() {
+            $('#fileInput').change(function() {
+                var file = fileInput.files[0];
+                var reader = new FileReader();
+                reader.onload = function () {
+                    var textInput = reader.result;
+                    preProData(textInput);
+                    initEmbedding();
+                    opt = {epsilon: lr, perplexity: perplexity, dim: data[0].length};
+                    T = new tsnejs.tSNE(opt);
+                    T.initDataRaw(data);
+                    drawEmbedding();
+                    iid = setInterval(step, 10);
+                }
+                reader.readAsText(file);
+            });
+        });
+    </script>
+</head>
+<body>
+select csv file:
+<input type='file' id='fileInput'>
+<div id='show'></div>
+</body>
+</html>

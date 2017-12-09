@@ -1,0 +1,197 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <title>Assignment 1</title>
+    <script src='https://d3js.org/d3.v4.min.js'></script>
+    <script src='jsLouvain.js' type='text/JavaScript'></script>
+    <script>
+        d3.json('filters256.json', function(error, graph) {
+            const nodes = graph.nodes;
+            const links = graph.links;
+            const width = 2000;
+            const height = 1000;
+
+            const padding = 9;
+            const clusterPadding = 48;
+
+            const maxRadius = 12;
+            const z = d3.scaleOrdinal(d3.schemeCategory20);
+
+            var nodeData = nodes.map(function (d) {
+                return d.id
+            });
+            var linkData = links.map(function (d) {
+                return {source: d.source, target: d.target, weight: d.weight};
+            });
+
+            var community = jLouvain()
+                .nodes(nodeData)
+                .edges(linkData);
+            var result = community();
+
+            const defaultRadius = 4;
+            nodes.forEach(function (node) {
+                node.r = defaultRadius;
+                node.cluster = result[node.id]
+            });
+
+            const clusters = {};
+            nodes.forEach(function (node) {
+                const radius = node.r;
+                const clusterID = node.cluster;
+                if (!clusters[clusterID] || (radius > clusters[clusterID].r)) {
+                    clusters[clusterID] = node;
+                }
+            });
+
+            const svg = d3.select('body')
+                .append('svg')
+                .attr('height', height)
+                .attr('width', width)
+                .append('g')
+                .attr('transform', 'translate(' + width / 2 + ',' + height / 2 + ')');
+
+            var link = svg.selectAll('line')
+                .data(graph.links)
+                .enter().append('line');
+
+            link
+                .attr('class', 'link')
+                .style('stroke', 'darkgray')
+                .style('stroke-width', '2px');
+
+            const circles = svg.append('g')
+                .datum(nodes)
+                .selectAll('.circle')
+                .data(function (d) {
+                    return d;
+                })
+                .enter().append('circle')
+                .attr('r', function (d) {
+                    return d.r;
+                })
+                .attr('fill', function (d) {
+                    return z(d.cluster);
+                })
+                .attr('stroke', 'black')
+                .attr('stroke-width', 1)
+                .call(d3.drag()
+                    .on("start", dragstarted)
+                    .on("drag", dragged)
+                    .on("end", dragended)
+                );
+
+            const simulation = d3.forceSimulation()
+                .nodes(nodes)
+                .force('link', d3.forceLink().id(function (d) {
+                    return d.id;
+                }))
+                .velocityDecay(0.2)
+                .force('x', d3.forceX().strength(0.0005))
+                .force('y', d3.forceY().strength(0.0005))
+                .force('collide', collide)
+                .force('cluster', clustering)
+                .on('tick', ticked);
+
+            simulation.force('link')
+                .links(graph.links)
+
+            function ticked() {
+                link.attr('x1', function (d) {
+                    return d.source.x;
+                })
+                    .attr('y1', function (d) {
+                        return d.source.y;
+                    })
+                    .attr('x2', function (d) {
+                        return d.target.x;
+                    })
+                    .attr('y2', function (d) {
+                        return d.target.y;
+                    });
+
+                circles.attr('cx', function (d) {
+                    return d.x;
+                })
+                    .attr('cy', function (d) {
+                        return d.y;
+                    });
+            }
+
+            function dragstarted(d) {
+                if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+
+            function dragged(d) {
+                d.fx = d3.event.x;
+                d.fy = d3.event.y;
+            }
+
+            function dragended(d) {
+                if (!d3.event.active) simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+            }
+
+            function clustering(alpha) {
+                nodes.forEach(function (d) {
+                    const cluster = clusters[d.cluster];
+                    if (cluster === d) return;
+                    x = d.x - cluster.x;
+                    y = d.y - cluster.y;
+                    l = Math.sqrt((x * x) + (y * y));
+                    const r = d.r + cluster.r;
+                    if (l !== r) {
+                        l = ((l - r) / l) * alpha;
+                        d.x -= x *= l;
+                        d.y -= y *= l;
+                        cluster.x += x;
+                        cluster.y += y;
+                    }
+                });
+            }
+
+            function collide(alpha) {
+                const quadtree = d3.quadtree().x(function (d) {
+                    return d.x;
+                })
+                    .y(function (d) {
+                        return d.y;
+                    })
+                    .addAll(nodes);
+
+                nodes.forEach(function (d) {
+                    const r = d.r + maxRadius + Math.max(padding, clusterPadding);
+                    const nx1 = d.x - r;
+                    const nx2 = d.x + r;
+                    const ny1 = d.y - r;
+                    const ny2 = d.y + r
+                    quadtree.visit(function(quad, x1, y1, x2, y2) {
+                        if(quad.data && (quad.data !== d)){
+                            x = d.x - quad.data.x;
+                            y = d.y - quad.data.y;
+                            l = Math.sqrt((x * x) + (y * y));
+                            const r = d.r + quad.data.r + (d.cluster === quad.data.cluster ? padding : clusterPadding);
+                            if (l < r) {
+                                l = ((l - r) / l) * alpha;
+                                d.x -= x *= l;
+                                d.y -= y *= l;
+                                quad.data.x += x;
+                                quad.data.y += y;
+                            }
+                        }
+                        return x1 > nx2 || x2 < nx1 || y1 > ny2 || y2 < ny1;
+                    });
+                });
+            }
+        });
+    </script>
+</head>
+<body>
+
+
+</body>
+</html>
