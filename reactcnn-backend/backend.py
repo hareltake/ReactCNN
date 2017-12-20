@@ -106,8 +106,9 @@ def launch_backend(model, num_examples=10000):
         print(num_survey_layers, ' layers to survey')
         fetches = []
 
-        for layer_out in output:
+        for layer_out in output[:-1]:
             fetches.append(tf.reduce_mean(layer_out, axis=[1, 2]))
+        fetches.append(tf.nn.softmax(output[-1]))
 
         fetches.append(labels)
         fetches.append(images)

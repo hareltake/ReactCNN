@@ -219,4 +219,10 @@ class VFSFullSurveyBuilder(VFSBuilder):
         x = self._relu(x)
         x = self._conv_with_bn_raw(12, x)
         result.append(x)
+        x = self._relu(x)
+        x = self._maxpool(x)
+        x = self._flatten(x)
+        x = self._fc(0, x)
+        x = self._fc(1, x)
+        result.append(x)
         return result
