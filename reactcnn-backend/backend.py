@@ -21,6 +21,8 @@ CORR_FILE_PATTERN = 'corr_layer_{}.csv'
 
 IMAGE_FILE_PATTERN = 'image_{}.png'
 
+THERM_FILE_PATTERN = 'therm_layer{}.csv'
+
 EXAMPLE_CACHE_SIZE = 10
 
 EXAMPLE_SAVE_EVERY_STEP = 1
@@ -30,6 +32,8 @@ CORR_CACHE_SIZE = 1000
 CORR_SAVE_EVERY_STEP = 10
 
 SLEEP_SECONDS = 1
+
+num_survey_layers = 13
 
 class SurveyExampleRecord(object):
 
@@ -92,6 +96,19 @@ def format_array(array):
 #     for i,img in enumerate(img_list):
 #         Image.fromarray((img+cifar_mean_array)[:,:,[2,1,0]].astype(np.uint8), mode='RGB').save(IMAGE_FILE_PATTERN.format(i))
 
+# featuremaps: a 4-D numpy tensor
+def save_therm_file(layer_idx, featuremaps):
+    filters = featuremaps.shape[3]
+    activation = np.maximum(0, featuremaps)
+    result = ''
+    for i in range(filters):
+        channel = activation[0,:,:,i].ravel()
+        result += format_array(channel) + '\n'
+    with open(THERM_FILE_PATTERN.format(layer_idx), 'w') as f:
+        f.write(result[:-1])
+
+
+
 def launch_backend(model, num_examples=10000):
 
     for file in glob.glob("*.csv"):
@@ -102,12 +119,11 @@ def launch_backend(model, num_examples=10000):
     with model.graph.as_default():
         images, labels = model.input_images, model.input_labels
         output = model.output
-        num_survey_layers = len(output)
         print(num_survey_layers, ' layers to survey')
         fetches = []
 
         for layer_out in output[:-1]:
-            fetches.append(tf.reduce_mean(layer_out, axis=[1, 2]))
+            fetches.append(layer_out)
         fetches.append(tf.nn.softmax(output[-1]))
 
         fetches.append(labels)
@@ -138,8 +154,10 @@ def launch_backend(model, num_examples=10000):
                     fet = sess.run(fetches)
                     new_example_record = SurveyExampleRecord(idx=step)
                     for i in range(num_survey_layers):
-                        new_example_record.layer_filter_mean_output_list.append(fet[i].ravel()) # only works for batch size 1
-                        cache_push(corr_cache_list[i], fet[i], CORR_CACHE_SIZE)
+                        mean_activation = np.mean(fet[i], axis=(1,2))
+                        new_example_record.layer_filter_mean_output_list.append(mean_activation.ravel()) # only works for batch size 1
+                        save_therm_file(i, fet[i])
+                        cache_push(corr_cache_list[i], mean_activation, CORR_CACHE_SIZE)
                     new_example_record.output_image = fet[-1][0,:,:,:]
                     new_example_record.label = fet[-2].ravel()[0]
                     cache_push(survey_examples_cache, new_example_record, EXAMPLE_CACHE_SIZE)
