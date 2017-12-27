@@ -52,6 +52,7 @@ class SurveyExampleRecord(object):
             for array in self.layer_filter_mean_output_list:
                 # print(np.array2string(array, precision=5, separator=',')[1:-1].replace(' ','').replace('\n',''), file=f)
                 print(format_array(array), file=f)
+            print(format_array(self.possibilies), file=f)
         self.has_saved = True
 
     def __del__(self):
@@ -70,10 +71,7 @@ def format_array(array):
     result = ''
     if array.ndim == 1:
         for a in array:
-            if type(a) == np.int64:
-                result += '%d,' % a
-            else:
-                result += '%.4f,' % a
+            result += '%.4f,' % a
     elif array.ndim == 2:
         for i in range(array.shape[0]):
             line = ''
@@ -163,6 +161,7 @@ def launch_backend(model, num_examples=10000):
                         cache_push(corr_cache_list[i], mean_activation, CORR_CACHE_SIZE)
                     new_example_record.output_image = fet[-1][0,:,:,:]
                     new_example_record.label = fet[-2].ravel()[0]
+                    new_example_record.possibilies = fet[-3][0,:]
                     cache_push(survey_examples_cache, new_example_record, EXAMPLE_CACHE_SIZE)
 
                     step += 1
@@ -183,10 +182,8 @@ def launch_backend(model, num_examples=10000):
                         for layer_idx, corr_cache in enumerate(corr_cache_list):
                             output_array = np.concatenate(corr_cache, axis=0)
                             corr_array = np.corrcoef(output_array, rowvar=False)
-                            corr_array = np.exp(20*corr_array) # mapping function
-                            id_array = np.array([i for i in range(corr_array.shape[0])])
+                            corr_array = np.exp(20*corr_array)              # mapping function
                             with open(CORR_FILE_PATTERN.format(layer_idx), 'w') as f:
-                                print(format_array(id_array), file=f)
                                 print(format_array(corr_array), file=f)
                         print('corr file saved')
 
