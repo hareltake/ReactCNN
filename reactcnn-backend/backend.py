@@ -70,7 +70,10 @@ def format_array(array):
     result = ''
     if array.ndim == 1:
         for a in array:
-            result += '%.4f,' % a
+            if type(a) == np.int64:
+                result += '%d,' % a
+            else:
+                result += '%.4f,' % a
     elif array.ndim == 2:
         for i in range(array.shape[0]):
             line = ''
@@ -179,9 +182,13 @@ def launch_backend(model, num_examples=10000):
                     if step % CORR_SAVE_EVERY_STEP == 0:
                         for layer_idx, corr_cache in enumerate(corr_cache_list):
                             output_array = np.concatenate(corr_cache, axis=0)
+                            print (output_array.shape)
                             corr_array = np.corrcoef(output_array, rowvar=False)
-                            corr_array = np.exp(20*corr_array)              # mapping function
+                            corr_array = np.exp(20*corr_array)   
+                            print (corr_array.shape)           # mapping function
                             with open(CORR_FILE_PATTERN.format(layer_idx), 'w') as f:
+                                id_array = np.array([i for i in range(corr_array.shape[0])])
+                                print(format_array(id_array), file=f)
                                 print(format_array(corr_array), file=f)
                         print('corr file saved')
 
