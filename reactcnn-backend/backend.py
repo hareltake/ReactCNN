@@ -10,6 +10,7 @@ from tfm_image_processor import CIFAR10_MEAN
 import os
 import time
 import glob
+import json
 
 cifar_mean_array = np.array(CIFAR10_MEAN)
 
@@ -21,7 +22,7 @@ CORR_FILE_PATTERN = 'corr_layer_{}.csv'
 
 IMAGE_FILE_PATTERN = 'image_{}.png'
 
-THERM_FILE_PATTERN = 'therm_layer{}.csv'
+THERM_FILE = 'therm.json'
 
 EXAMPLE_CACHE_SIZE = 10
 
@@ -71,7 +72,10 @@ def format_array(array):
     result = ''
     if array.ndim == 1:
         for a in array:
-            result += '%.4f,' % a
+            if type(a) == np.int64:
+                result += '%d,' % a
+            else:
+                result += '%.4f,' % a
     elif array.ndim == 2:
         for i in range(array.shape[0]):
             line = ''
@@ -97,16 +101,19 @@ def format_array(array):
 #     for i,img in enumerate(img_list):
 #         Image.fromarray((img+cifar_mean_array)[:,:,[2,1,0]].astype(np.uint8), mode='RGB').save(IMAGE_FILE_PATTERN.format(i))
 
-# featuremaps: a 4-D numpy tensor
-def save_therm_file(layer_idx, featuremaps):
-    filters = featuremaps.shape[3]
-    activation = np.maximum(0, featuremaps)
-    result = ''
-    for i in range(filters):
-        channel = activation[0,:,:,i].ravel()
-        result += format_array(channel) + '\n'
-    with open(THERM_FILE_PATTERN.format(layer_idx), 'w') as f:
-        f.write(result[:-1])
+# featuremaps: a 5-D numpy tensor
+def save_therm_file(fet):
+    result = {}
+    for i in range(num_survey_layers):
+        featuremaps = fet[i]
+        filters = featuremaps.shape[3]
+        activation = np.maximum(0, featuremaps)
+        result[i] = {}
+        for j in range(filters):
+            channel = activation[0,:,:,j].ravel()
+            result[i][j] = format_array(channel)
+    with open(THERM_FILE, 'w') as f:
+        f.write(json.dumps(result))
 
 
 
@@ -157,8 +164,8 @@ def launch_backend(model, num_examples=10000):
                     for i in range(num_survey_layers):
                         mean_activation = np.mean(fet[i], axis=(1,2))
                         new_example_record.layer_filter_mean_output_list.append(mean_activation.ravel()) # only works for batch size 1
-                        save_therm_file(i, fet[i])
                         cache_push(corr_cache_list[i], mean_activation, CORR_CACHE_SIZE)
+
                     new_example_record.output_image = fet[-1][0,:,:,:]
                     new_example_record.label = fet[-2].ravel()[0]
                     new_example_record.possibilies = fet[-3][0,:]
@@ -175,6 +182,7 @@ def launch_backend(model, num_examples=10000):
                         start_time = time.time()
 
                     if step % EXAMPLE_SAVE_EVERY_STEP == 0:
+                        save_therm_file(fet) # save all featuremaps of all layers in one file
                         for record in survey_examples_cache:
                             if not record.has_saved:
                                 record.save()
@@ -184,6 +192,8 @@ def launch_backend(model, num_examples=10000):
                             corr_array = np.corrcoef(output_array, rowvar=False)
                             corr_array = np.exp(20*corr_array)              # mapping function
                             with open(CORR_FILE_PATTERN.format(layer_idx), 'w') as f:
+                                id_array = np.array([i for i in range(corr_array.shape[0])])
+                                print(format_array(id_array), file=f)
                                 print(format_array(corr_array), file=f)
                         print('corr file saved')
 
