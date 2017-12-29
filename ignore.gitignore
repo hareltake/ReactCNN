@@ -1,2 +1,4 @@
 reactcnn-backend/*.csv
 reactcnn-backend/*.png
+reactcnn-backend/*.json
+reactcnn-backend/__pycache__/*
