@@ -16,7 +16,7 @@ cifar_mean_array = np.array(CIFAR10_MEAN)
 
 CONFIG_FILE = 'config.cfg'
 
-RECORD_FILE_PATTERN = 'survey_example_{}.csv'
+RECORD_FILE_PATTERN = 'survey_example_{}.json'
 
 CORR_FILE_PATTERN = 'corr_layer_{}.csv'
 
@@ -49,11 +49,32 @@ class SurveyExampleRecord(object):
     def save(self):
         Image.fromarray((self.output_image + cifar_mean_array)[:, :, [2, 1, 0]].astype(np.uint8), mode='RGB').save(self.image_path)
         with open(self.csv_path, 'w') as f:
+            print("{", file=f)
+            print("\"label\":", file=f)
             print(int(self.label), file=f)
-            for array in self.layer_filter_mean_output_list:
+            print(",", file=f)
+
+            print("\"layer\":", file=f)
+            print("[", file=f)
+            for i in range(num_survey_layers):
+                array = self.layer_filter_mean_output_list[i]
+                print("{", file=f)
+                print("\"_layer\":", file=f)
+                print("[", file=f)
                 # print(np.array2string(array, precision=5, separator=',')[1:-1].replace(' ','').replace('\n',''), file=f)
                 print(format_array(array), file=f)
+                print("]", file=f)
+                print("}", file=f)
+                if i != (num_survey_layers-1):
+                    print(",", file=f)
+            print("]", file=f)
+            print(",", file=f)
+
+            print("\"probs\":", file=f)
+            print("[", file=f)
             print(format_array(self.possibilies), file=f)
+            print("]", file=f)
+            f.write("}")
         self.has_saved = True
 
     def __del__(self):
@@ -113,7 +134,29 @@ def save_therm_file(fet):
             channel = activation[0,:,:,j].ravel()
             result[i][j] = format_array(channel)
     with open(THERM_FILE, 'w') as f:
-        f.write(json.dumps(result))
+        f.write("{")
+        f.write("\"therm\":")
+        f.write("[")
+        for i in range(num_survey_layers):
+            f.write("{")
+            f.write("\"_therm\":")
+            f.write("[")
+            for j in range(len(result[i])):
+                f.write("{")
+                f.write("\"__therm\":")
+                f.write("[")
+                f.write(result[i][j])
+                f.write("]")
+                f.write("}")
+                if j != (len(result[i])-1):
+                    f.write(",")
+            f.write("]")
+            f.write("}")
+            if i != (num_survey_layers-1):
+                f.write(",")
+
+        f.write("]")
+        f.write("}")
 
 
 
