@@ -16,42 +16,55 @@
 
     var liner = d3.scale.linear().domain([0, 1])
         .range([0, 1]);
-    var colorA = d3.rgb(0, 255, 255);
-    var colorB = d3.rgb(0, 0, 255);
+    var colorA = d3.rgb(0, 255, 255);//(10, 207, 254);//(0, 255, 255);
+    var colorB = d3.rgb(0, 0, 255);//(73, 90, 255);//(0, 0, 255);
     var computeColor = d3.interpolate(colorA, colorB);
 
-    var count = 5;
-    window.setInterval("timer()", 3000);
+    var image = svg.append("image")
+        .attr("x", 0)
+        .attr("y", 231)
+        .attr("width", 50)
+        .attr("height", 50);
+
+    var innersvg = svg.append("svg")
+        .attr("x", 70)
+        .attr("y", 384)
+        .attr("width", 256)
+        .attr("height", 256);
+
+    for (var j = 0; j < 13; j++) {
+        // layer[j]._layer.forEach(function (d) { d.j = j; alert(j); })
+        svg.append("g").attr("id", "g"+j);
+    }
+
+    var categories = ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
+    var textg = svg.append("g").attr("id", "g13");
+    for (var i = 0; i < 10; i++) {
+        textg.append("text").attr("id", "t"+i)
+            .attr("x", 80 * 13 + 60)
+            .attr("y", i * 45 + 55)
+            .attr("font-size", "25px");
+    }
+
+    var count = 0;
+    window.setInterval("timer()", 2000);
     var timer = function () {
         count++;
-        svg.remove();
-        svg = d3.select("body").append("svg")
-            .attr("width", width)
-            .attr("height", height);
-
-        var image = svg.append("image")
-            .attr("x", 0)
-            .attr("y", 231)
-            .attr("width", 50)
-            .attr("height", 50)
-            .attr("xlink:href", "..\\reactcnn-backend\\image_"+count+".png");
-
-        var innersvg = svg.append("svg")
-            .attr("x", 70)
-            .attr("y", 384)
-            .attr("width", 256)
-            .attr("height", 256);
+        image.attr("xlink:href", "..\\reactcnn-backend\\image_"+count+".png");
 
         d3.json("..\\reactcnn-backend\\therm.json", function (error, data) {
             if (error) throw error;
             var therm = data.therm;
 
             d3.json("..\\reactcnn-backend\\survey_example_"+count+".json", function (error, data) {
-                if (error) throw error;
+                if (error) {
+                    count--;
+                    throw error;
+                }
                 var layer = data.layer;
                 for (var j = 0; j < layer.length; j++) {
                     // layer[j]._layer.forEach(function (d) { d.j = j; alert(j); })
-                    var g = svg.append("g");
+                    var g = svg.selectAll("#g"+j);
                     g.selectAll("rect")
                         .data(layer[j]._layer)
                         .enter()
@@ -63,7 +76,10 @@
                             return (Math.floor(i / 8)) * 8 + 256 - (layer[j]._layer.length / 2);
                         })
                         .attr("width", 7)
-                        .attr("height", 7)
+                        .attr("height", 7);
+
+                    g.selectAll("rect")
+                        .data(layer[j]._layer)
                         .attr("fill", function (d) {
                             if (d < 0) {
                                 var color = computeColor(liner(0));
@@ -115,13 +131,9 @@
                         });
                 }
 
-                var categories = ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
-                var textg = svg.append("g");
+                var textg = svg.select("#g13");
                 for (var i = 0; i < 10; i++) {
-                    textg.append("text")
-                        .attr("x", 80 * 13 + 60)
-                        .attr("y", i * 45 + 55)
-                        .attr("font-size", "25px")
+                    textg.select("#t"+i)
                         .attr("fill", function () {
                             return i == data.label ? "#ff0000" : "#000000";
                         })
@@ -129,10 +141,6 @@
                 }
             });
         });
-
-
     }
-
-    timer();
 </script>
 </html>
