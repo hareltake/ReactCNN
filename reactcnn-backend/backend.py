@@ -21,7 +21,7 @@ CORR_FILE_PATTERN = 'static/corr_layer_{}.csv'
 
 IMAGE_FILE_PATTERN = 'static/image_{}.png'
 
-THERM_FILE = 'static/therm.json'
+THERM_FILE_PATTERN = 'static/therm_{}.json'
 
 EXAMPLE_CACHE_SIZE = 10
 
@@ -42,6 +42,7 @@ class SurveyExampleRecord(object):
         self.layer_filter_mean_output_list = []
         self.image_path = IMAGE_FILE_PATTERN.format(idx)
         self.csv_path = RECORD_FILE_PATTERN.format(idx)
+        self.therm_path = THERM_FILE_PATTERN.format(idx)
         self.has_saved = False
 
     # save the input image, label, and mean outputs of every filter in every layer
@@ -74,6 +75,8 @@ class SurveyExampleRecord(object):
             print(format_array(self.possibilies), file=f)
             print("]", file=f)
             f.write("}")
+
+        save_therm_file(self.therm_path, self.fet) # save all featuremaps of all layers in one file
         self.has_saved = True
 
     def __del__(self):
@@ -81,6 +84,8 @@ class SurveyExampleRecord(object):
             os.remove(self.image_path)
         if os.path.exists(self.csv_path):
             os.remove(self.csv_path)
+        if os.path.exists(self.therm_path):
+            os.remove(self.therm_path);
 
 def cache_push(cache_list, element, cache_size):
     assert len(cache_list) <= cache_size
@@ -119,7 +124,7 @@ def format_array(array):
 #         Image.fromarray((img+cifar_mean_array)[:,:,[2,1,0]].astype(np.uint8), mode='RGB').save(IMAGE_FILE_PATTERN.format(i))
 
 # featuremaps: a 5-D numpy tensor
-def save_therm_file(fet):
+def save_therm_file(therm_path, fet):
     result = {}
     for i in range(num_survey_layers):
         featuremaps = fet[i]
@@ -129,7 +134,7 @@ def save_therm_file(fet):
         for j in range(filters):
             channel = activation[0,:,:,j].ravel()
             result[i][j] = format_array(channel)
-    with open(THERM_FILE, 'w') as f:
+    with open(therm_path, 'w') as f:
         f.write("{")
         f.write("\"therm\":")
         f.write("[")
@@ -208,6 +213,7 @@ def launch_backend(model, num_examples=10000):
                     new_example_record.output_image = fet[-1][0,:,:,:]
                     new_example_record.label = fet[-2].ravel()[0]
                     new_example_record.possibilies = fet[-3][0,:]
+                    new_example_record.fet = fet
                     cache_push(survey_examples_cache, new_example_record, EXAMPLE_CACHE_SIZE)
 
                     step += 1
@@ -221,7 +227,6 @@ def launch_backend(model, num_examples=10000):
                         start_time = time.time()
 
                     if step % EXAMPLE_SAVE_EVERY_STEP == 0:
-                        save_therm_file(fet) # save all featuremaps of all layers in one file
                         for record in survey_examples_cache:
                             if not record.has_saved:
                                 record.save()
