@@ -7,7 +7,7 @@ app = Flask(__name__)
 
 @app.route("/")
 def get_index():
-    return render_template('index2.html')
+    return render_template('reactCNN.html')
 
 @app.route("/getCorrData")
 def get_corr_data():

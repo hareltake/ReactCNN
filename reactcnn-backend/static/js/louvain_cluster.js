@@ -91,12 +91,15 @@ function louvain_cluster(layer) {
                     return d;
                 })
                 .enter().append('circle')
+                .attr('id', function(d) {
+                    return d.id;
+                })
                 .attr('r', function (d) {
                     return d.r;
                 })
                 .attr('cluster', function (d) {
                     return d.cluster;
-                }
+                })
                 .attr('fill', function (d) {
                     return z(d.cluster);
                 })
@@ -106,7 +109,26 @@ function louvain_cluster(layer) {
                     .on("start", dragstarted)
                     .on("drag", dragged)
                     .on("end", dragended)
-                );
+                )
+                .on("click", function() {
+                    var circle =  d3.select(this);
+                    var cluster = circle.attr("cluster");
+                    var rect_list = new Array()
+                    
+                    var circles = d3.selectAll("circle").each(function (node) {
+                        if (node.cluster == cluster) {
+                            rect_list.push(node.id);
+                        }
+                    });
+
+                    console.log(cluster);
+                    console.log(rect_list);
+
+                    rect_list.forEach(function(d){
+                        rect = d3.select("body").select("svg").select("#g" + layer).select("#r" + d)
+                        .attr("fill", circle.attr("fill"));
+                    });
+                });
 
             const simulation = d3.forceSimulation()
                 .nodes(nodes)

@@ -44,6 +44,7 @@
                 i++;
                 var layer = d3.select(this).attr("id").substring(1);
                 louvain_cluster(layer);
+                
                 if (i > 1) {
                     window.clearInterval(t);
                 }
@@ -66,8 +67,12 @@
     var timer = function () {
         count++;
 
-        d3.json("{{ url_for('static', filename='therm.json') }}", function (error, data) {
-            if (error) throw error;
+        var thermname = "/static/therm_" + count + ".json"
+        d3.json(thermname, function (error, data) {
+            if (error) {
+                count--;
+                throw error;
+            }
             var therm = data.therm;
             var filename = "/static/survey_example_" + count + ".json"
 
@@ -93,7 +98,10 @@
                             return (Math.floor(i / 8)) * 8 + 256 - (layer[j]._layer.length / 2) + 80;
                         })
                         .attr("width", 7)
-                        .attr("height", 7);
+                        .attr("height", 7)
+                        .attr("id", function (d, i) {
+                            return "r" + i;
+                        });
 
                     g.selectAll("rect")
                         .data(layer[j]._layer)
