@@ -7,11 +7,12 @@ app = Flask(__name__)
 
 @app.route("/")
 def get_index():
-    return render_template('louvain_cluster.html')
+    return render_template('index2.html')
 
 @app.route("/getCorrData")
 def get_corr_data():
-	f = open('corr_layer_10.csv')
+	layer = request.args['l']
+	f = open('static/corr_layer_' + layer + '.csv')
 	lines = f.readlines()
 	data = {}
 	for i in range(len(lines)):

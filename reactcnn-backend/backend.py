@@ -10,19 +10,18 @@ from tfm_image_processor import CIFAR10_MEAN
 import os
 import time
 import glob
-import json
 
 cifar_mean_array = np.array(CIFAR10_MEAN)
 
 CONFIG_FILE = 'config.cfg'
 
-RECORD_FILE_PATTERN = 'survey_example_{}.json'
+RECORD_FILE_PATTERN = 'static/survey_example_{}.json'
 
-CORR_FILE_PATTERN = 'corr_layer_{}.csv'
+CORR_FILE_PATTERN = 'static/corr_layer_{}.csv'
 
-IMAGE_FILE_PATTERN = 'image_{}.png'
+IMAGE_FILE_PATTERN = 'static/image_{}.png'
 
-THERM_FILE = 'therm.json'
+THERM_FILE = 'static/therm.json'
 
 EXAMPLE_CACHE_SIZE = 10
 
