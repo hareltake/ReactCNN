@@ -50,7 +50,6 @@
     window.setInterval("timer()", 2000);
     var timer = function () {
         count++;
-        image.attr("xlink:href", "..\\reactcnn-backend\\image_"+count+".png");
 
         d3.json("..\\reactcnn-backend\\therm.json", function (error, data) {
             if (error) throw error;
@@ -61,6 +60,7 @@
                     count--;
                     throw error;
                 }
+                image.attr("xlink:href", "..\\reactcnn-backend\\image_"+count+".png");
                 var layer = data.layer;
                 for (var j = 0; j < layer.length; j++) {
                     // layer[j]._layer.forEach(function (d) { d.j = j; alert(j); })
