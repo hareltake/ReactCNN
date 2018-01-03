@@ -303,6 +303,9 @@ function transition(layer) {
                 .attr('r', function (d) {
                     return d.r;
                 })
+                .attr('cluster', function (d) {
+                    return d.cluster;
+                })
                 .attr('fill', function (d) {
                     return z(d.cluster);
                 })
