@@ -11,7 +11,7 @@
 <body>
 </body>
 <script>
-    var width = 1350;
+    var width = 1450;
     var height = 700;
     var svg = d3.select("body").append("svg")
         .attr("width", width)
@@ -19,10 +19,10 @@
 
     var liner = d3.scaleLinear().domain([0, 1])
         .range([0, 1]);
-    // var colorA = d3.rgb(186, 232, 207);//(10, 207, 254);//(0, 255, 255);
-    // var colorB = d3.rgb(21, 103, 40);//(73, 90, 255);//(0, 0, 255);
-    var colorA = d3.rgb(226, 218, 218);//(10, 207, 254);//(0, 255, 255);
-    var colorB = d3.rgb(217, 4, 54);//(73, 90, 255);//(0, 0, 255);
+    var colorA = d3.rgb(186, 232, 207);//(10, 207, 254);//(0, 255, 255);
+    var colorB = d3.rgb(21, 103, 40);//(73, 90, 255);//(0, 0, 255);
+    // var colorA = d3.rgb(226, 218, 218);//(10, 207, 254);//(0, 255, 255);
+    // var colorB = d3.rgb(217, 4, 54);//(73, 90, 255);//(0, 0, 255);
     var computeColor = d3.interpolate(colorA, colorB);
 
     var colorT0 = d3.rgb(244, 218, 178);
@@ -64,7 +64,7 @@
             });
     }
 
-    var categories = ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
+    var categories = ["plane", "car", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
     var textg = svg.append("g").attr("id", "g13");
     for (var i = 0; i < 10; i++) {
         textg.append("text").attr("id", "t"+i)

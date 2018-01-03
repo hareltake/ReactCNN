@@ -1,5 +1,5 @@
 const width_c = 600;
-const height_c = 300;
+const height_c = 500;
 
 const padding = 0;
 const clusterPadding = 20;
@@ -68,12 +68,12 @@ function louvain_cluster(layer) {
             const svg = d3.select('svg')
                 .append('svg')
                 .attr('id', "cluster")
-                .attr('x', -50)
+                .attr('x', 0)
                 .attr('y', 420)
                 .attr('height', height_c)
                 .attr('width', width_c)
                 .append('g')
-                .attr('transform', 'translate(' + width_c / 2 + ',' + height_c / 2 + ')');
+                .attr('transform', 'translate(' + width_c / 2 + ',' + height_c * 3 / 10 + ')');
 
             var link = svg.selectAll('line')
                 .data(links)
