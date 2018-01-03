@@ -19,9 +19,15 @@
 
     var liner = d3.scaleLinear().domain([0, 1])
         .range([0, 1]);
-    var colorA = d3.rgb(0, 255, 255);//(10, 207, 254);//(0, 255, 255);
-    var colorB = d3.rgb(0, 0, 255);//(73, 90, 255);//(0, 0, 255);
+    // var colorA = d3.rgb(186, 232, 207);//(10, 207, 254);//(0, 255, 255);
+    // var colorB = d3.rgb(21, 103, 40);//(73, 90, 255);//(0, 0, 255);
+    var colorA = d3.rgb(226, 218, 218);//(10, 207, 254);//(0, 255, 255);
+    var colorB = d3.rgb(217, 4, 54);//(73, 90, 255);//(0, 0, 255);
     var computeColor = d3.interpolate(colorA, colorB);
+
+    var colorT0 = d3.rgb(244, 218, 178);
+    var colorT1 = d3.rgb(234, 85, 32);
+    var computeColorT = d3.interpolate(colorT0, colorT1);
 
     var image = svg.append("image")
         .attr("x", 120)
@@ -48,7 +54,12 @@
                 if (i > 1) {
                     window.clearInterval(t);
                 }
-                t = window.setInterval(function() {transition(layer)}, 4000);
+                if (parseInt(layer) < 4) {
+                    t = window.setInterval(function() {transition(layer)}, 4000);
+                }
+                else {
+                    t = window.setTimeout(function() {transition(layer)}, parseInt(layer) * 2500);
+                }
 
             });
     }
@@ -63,7 +74,7 @@
     }
 
     var count = 0;
-    window.setInterval("timer()", 2000);
+    window.setInterval("timer()", 4000);
     var timer = function () {
         count++;
 
@@ -139,13 +150,13 @@
                                 .attr("height", 7)
                                 .attr("fill", function (d) {
                                     if(d < 0) {
-                                        var color = computeColor(liner(0));
+                                        var color = computeColorT(liner(0));
                                     }
                                     else if(d > 1) {
-                                        var color = computeColor(liner(1));
+                                        var color = computeColorT(liner(1));
                                     }
                                     else {
-                                        var color = computeColor(liner(d));
+                                        var color = computeColorT(liner(d));
                                     }
                                     return color.toString();
                                 });
@@ -160,9 +171,9 @@
                 for (var i = 0; i < 10; i++) {
                     textg.select("#t"+i)
                         .attr("fill", function () {
-                            return i == data.label ? "#ff0000" : "#000000";
+                            return i == data.label ? "#f40617" : "#3e2c2d";
                         })
-                        .text(data.probs[i] + " " + categories[i]);
+                        .text(categories[i] + " " + data.probs[i]);
                 }
             });
         });
