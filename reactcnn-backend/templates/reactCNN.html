@@ -36,9 +36,9 @@
         .attr("height", 50);
 
     var innersvg = svg.append("svg")
-        .attr("x", 60)
+        .attr("x", 0)
         .attr("y", 10)
-        .attr("width", 256)
+        .attr("width", 1250)
         .attr("height", 256);
 
     var i = 0;
@@ -140,11 +140,17 @@
                                 .attr("x", function (d, k) {
                                     // return (k % (Math.sqrt(therm[j][i].length)) + 1) * 8;
                                     // console.log(Math.sqrt(therm[m]._therm[i].__therm.length));
-                                    return (k % (Math.sqrt(therm[m]._therm[i].__therm.length)) + 1) * 8;
+                                    return (k % (Math.sqrt(therm[m]._therm[i].__therm.length)) + 1) * 8 + (212 + 80 * m) - (Math.sqrt(therm[m]._therm[i].__therm.length) / 2 * 8);
                                 })
                                 .attr("y", function (d, k) {
                                     // return (Math.floor(k / (Math.sqrt(therm[j][i].length)))) * 8;
-                                    return (Math.floor(k / (Math.sqrt(therm[m]._therm[i].__therm.length)))) * 8;
+                                    if(m < 7) {
+                                        return (Math.floor(k / (Math.sqrt(therm[m]._therm[i].__therm.length)))) * 8 + ((32 - Math.sqrt(therm[m]._therm[i].__therm.length)) / 2 * 8);
+                                    }
+                                    else {
+                                        return (Math.floor(k / (Math.sqrt(therm[m]._therm[i].__therm.length)))) * 8 + ((6 - Math.sqrt(therm[m]._therm[i].__therm.length)) / 2 * 8);
+                                    }
+                                    
                                 })
                                 .attr("width", 7)
                                 .attr("height", 7)
